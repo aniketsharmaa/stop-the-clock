@@ -97,7 +97,9 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         working-directory: android
-        run: ./gradlew bundleRelease --stacktrace
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease --stacktrace
 
       - name: Verify release AAB exists
         shell: bash
