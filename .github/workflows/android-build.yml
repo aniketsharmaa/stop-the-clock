@@ -55,28 +55,15 @@ jobs:
       - name: Synchronize Capacitor Android assets
         run: npx cap sync android
 
-      - name: Restore stable debug signing keystore
-        env:
-          DEBUG_KEYSTORE_BASE64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_BASE64 }}
-        shell: bash
-        run: |
-          if [[ -n "$DEBUG_KEYSTORE_BASE64" ]]; then
-            echo "$DEBUG_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/stop-the-clock-debug.jks"
-            test -s "$RUNNER_TEMP/stop-the-clock-debug.jks"
-          else
-            echo "Stable debug signing is not configured; Gradle will use its local generated debug key."
-          fi
-
       - name: Build debug APK
-        env:
-          ANDROID_DEBUG_KEYSTORE_PATH: ${{ runner.temp }}/stop-the-clock-debug.jks
-          ANDROID_DEBUG_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_DEBUG_KEYSTORE_PASSWORD }}
-          ANDROID_DEBUG_KEY_ALIAS: ${{ secrets.ANDROID_DEBUG_KEY_ALIAS }}
-          ANDROID_DEBUG_KEY_PASSWORD: ${{ secrets.ANDROID_DEBUG_KEY_PASSWORD }}
         working-directory: android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
+          unset ANDROID_DEBUG_KEYSTORE_PATH
+          unset ANDROID_DEBUG_KEYSTORE_PASSWORD
+          unset ANDROID_DEBUG_KEY_ALIAS
+          unset ANDROID_DEBUG_KEY_PASSWORD
+          ./gradlew assembleDebug --stacktrace --info
 
       - name: Verify APK exists
         shell: bash
