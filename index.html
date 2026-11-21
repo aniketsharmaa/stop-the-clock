@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3ecdf">
+<title>STOP THE CLOCK – Stopwatch Challenge</title>
+<style>
+:root {
+  --paper: #f3ecdf;
+  --panel: #fffaf0;
+  --text: #222;
+  --muted: #665f55;
+  --line: #222;
+  --sage: #cfe3b4;
+  --lavender: #dcd3f0;
+  --peach: #f5c9a0;
+  --sky: #b9d4f2;
+  --accent: var(--sage);
+  --shadow: 3px 3px 0 #222;
+}
+
+[data-theme=mint] { --paper: #e7f0e2; --accent: var(--sage); }
+[data-theme=lavender] { --paper: #eee9f6; --accent: var(--lavender); }
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { color-scheme: light; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--text);
+  background: var(--paper);
+  font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+main { width: min(760px, 100%); min-height: 100vh; margin: 0 auto; padding: clamp(22px, 4vw, 42px) 20px 60px; }
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+h1 { margin: 0; display: flex; align-items: center; gap: 7px; font-size: clamp(1.6rem, 7vw, 2.3rem); letter-spacing: .5px; font-weight: 900; }
+h1 svg, button svg { fill: none; stroke: var(--text); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+h1 b, .highlight { position: relative; z-index: 0; }
+h1 b::after, .highlight::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: -3px;
+  right: -3px;
+  bottom: 1px;
+  height: .42em;
+  background: var(--peach);
+  transform: rotate(-1.5deg);
+}
+h2 { margin: 0 0 10px; font-size: clamp(1.3rem, 6vw, 1.8rem); font-weight: 900; }
+h3 { margin: 18px 0 8px; }
+.tag, .muted, .mode small { color: var(--muted); }
+.tag, label, .status, th, .scale-lbl {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-size: .78rem;
+}
+.screen { display: none; }
+.screen.active { display: block; animation: in .2s ease; }
+@keyframes in { from { opacity: 0; transform: translateY(6px); } }
+.stack { display: grid; gap: 12px; }
+.card, button, select, input {
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+}
+.card { background: var(--panel); padding: 14px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.center { text-align: center; }
+.status { min-height: 24px; margin: 10px 0 0; color: var(--text); font-weight: 700; }
+.status.warn { color: #8c3328; }
+button, select, input {
+  min-height: 50px;
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+  color: var(--text);
+  background: var(--panel);
+  padding: 12px 18px;
+  font-weight: 800;
+}
+button:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 3px solid var(--line);
+  outline-offset: 3px;
+}
+button:disabled { opacity: .45; cursor: not-allowed; }
+.btn { width: 100%; background: var(--accent); }
+.btn.ghost { background: var(--panel); }
+.icon { width: 48px; min-height: 48px; padding: 10px; }
+.icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.ic { width: 1.25em; height: 1.25em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -.2em; flex: none; }
+.mode {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  text-align: left;
+  width: 100%;
+  padding: 14px;
+}
+.mode[data-mode=friends] { background: var(--sage); }
+.mode[data-mode=blind] { background: var(--lavender); }
+.mode[data-mode=survival] { background: var(--peach); }
+.mode[data-mode=daily] { background: var(--sky); }
+.mode .ico { display: grid; place-items: center; flex: 0 0 34px; }
+.mode b { display: block; font-size: 1.1rem; }
+.prow { display: flex; gap: 8px; }
+.player-marker { display: flex; align-items: center; gap: 6px; flex: 0 0 58px; font: 700 .75rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.player-dot { width: 12px; height: 12px; border: 2px solid var(--line); border-radius: 50%; flex: none; }
+.player-badge { display: inline-flex; align-items: center; gap: 6px; }
+.player-number { font: 700 .72rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.title-chip { display: block; width: fit-content; margin-top: 4px; padding: 2px 7px; border: 1px solid var(--line); border-radius: 999px; background: var(--lavender); font: 700 .7rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.rrow .title-chip { display: inline-block; margin: 0 0 0 6px; }
+.prow .x { flex: 0 0 50px; width: 50px; padding: 0; color: var(--text); background: var(--peach); }
+.actions { display: grid; gap: 10px; margin-top: 16px; }
+label { display: block; color: var(--muted); }
+label select, label input { display: block; margin-top: 4px; }
+input, select { width: 100%; padding: 10px 12px; background: var(--panel); color: var(--text); user-select: text; -webkit-user-select: text; }
+.big { font-size: clamp(2.6rem, 14vw, 4.6rem); font-weight: 900; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.chip {
+  display: inline-block;
+  padding: 6px 14px;
+  background: var(--lavender);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 2px 2px 0 var(--line);
+  font-weight: 800;
+}
+.timer-btn {
+  display: block;
+  margin: 22px auto;
+  width: min(68vw, 300px);
+  aspect-ratio: 1;
+  min-height: 0;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  font-size: clamp(1.8rem, 9vw, 2.8rem);
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: var(--text);
+  background: var(--sage);
+  box-shadow: 7px 7px 0 var(--line);
+}
+.timer-btn:active { transform: translate(7px, 7px); box-shadow: none; }
+.timer-btn.stop { background: var(--peach); }
+.pulse { width: 46px; height: 46px; margin: 14px auto 0; border-radius: 50%; background: var(--lavender); animation: pulse 2.4s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.3); opacity: .35; } }
+.scale { position: relative; height: 12px; border: 2px solid var(--line); border-radius: 5px; margin: 26px 8px 6px; background: var(--sky); }
+.scale .mid { position: absolute; left: 50%; top: -7px; bottom: -7px; width: 2px; margin-left: -1px; background: var(--line); }
+.scale .dot { position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: var(--peach); border: 2px solid var(--line); transition: left .8s cubic-bezier(.2,.9,.3,1.2); }
+.scale-lbl { display: flex; justify-content: space-between; padding: 0 8px; color: var(--muted); }
+.later { opacity: 0; transform: translateY(6px); transition: all .4s; }
+.later.show { opacity: 1; transform: none; }
+.verdict { font-size: 1.7rem; font-weight: 900; margin: 12px 0 4px; }
+.verdict .chip { margin: 3px; }
+.medal { vertical-align: -.25em; }
+.medal.rank-1 { color: #b8860b; }
+.medal.rank-2 { color: #708090; }
+.medal.rank-3 { color: #a0522d; }
+dl { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; margin: 10px 0 0; }
+dt { color: var(--muted); }
+dd { margin: 0; text-align: right; font-weight: 700; }
+table { border-collapse: collapse; width: 100%; font-size: .92rem; }
+th, td { padding: 9px 5px; border-bottom: 2px solid var(--line); text-align: left; }
+th:not(:first-child), td:not(:first-child) { text-align: right; }
+.tw { overflow-x: auto; }
+.winner { font-size: 1.35rem; font-weight: 900; color: var(--text); }
+.rrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; }
+.rrow.out { opacity: .6; }
+.cards4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cards4 .card { text-align: center; }
+.cards4 b { display: block; font-size: 1.5rem; }
+.toast { position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%); max-width: 90vw; padding: 10px 16px; border: 2px solid var(--line); border-radius: 10px; background: var(--peach); box-shadow: var(--shadow); z-index: 60; white-space: pre-line; font-size: .9rem; }
+.confetti { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 50; }
+.confetti span { position: absolute; top: -40px; animation: fall 2.3s linear forwards; }
+@keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+.chk { display: flex; align-items: center; gap: 10px; color: var(--text); font-family: system-ui, sans-serif; font-size: 1rem; text-transform: none; }
+.chk input { width: 24px; min-height: 24px; height: 24px; box-shadow: none; }
+.countdown-screen { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: var(--paper); color: var(--text); }
+.countdown-screen[hidden] { display: none; }
+.countdown-number { font-size: clamp(7rem, 30vw, 15rem); font-weight: 900; line-height: 1; animation: countdown-pop .9s ease both; }
+@keyframes countdown-pop { from { opacity: .2; transform: scale(.65); } 65% { transform: scale(1.08); } to { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+@media (min-width: 700px) {
+  main { padding-top: clamp(42px, 7vh, 78px); }
+  #setup-screen, #pass-screen, #game-screen, #turn-screen, #round-screen, #final-screen, #stats-screen, #settings-screen {
+    width: min(700px, 100%);
+    margin: 0 auto;
+  }
+}
+</style>
+</head>
+<body>
+<svg class="icon-sprite" aria-hidden="true">
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.6 10.6a2 2 0 1 0 2.8 2.8"></path><path d="M13.7 13.7 6.3 6.3"></path><path d="m2 2 20 20"></path><path d="M6.7 6.7C3.9 8.5 2 12 2 12s3.6 6 10 6a9.7 9.7 0 0 0 4.7-1.2"></path><path d="M9.9 5.1A10.4 10.4 0 0 1 12 5c6.4 0 10 7 10 7s-1.2 2.3-3.3 4.1"></path></symbol>
+  <symbol id="i-skull" viewBox="0 0 24 24"><path d="M12 2a8 8 0 0 0-8 8c0 3 1.5 5.6 4 7v3h8v-3c2.5-1.4 4-4 4-7a8 8 0 0 0-8-8Z"></path><path d="M9 10h.01M15 10h.01M9 15h6M10 19v-2M14 19v-2"></path></symbol>
+  <symbol id="i-calendar-days" viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14H3V6a2 2 0 0 1 2-2Z"></path><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"></path></symbol>
+  <symbol id="i-chart-column" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="M7 16v-5M12 16V7M17 16v-8"></path></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path><path d="m19.4 15 .1.1a2 2 0 1 1-2.8 2.8l-.1-.1a2 2 0 0 0-3.4 1.4v.3a2 2 0 1 1-4 0v-.2a2 2 0 0 0-3.4-1.4l-.1.1A2 2 0 1 1 3 15.2l.1-.1a2 2 0 0 0-1.4-3.4h-.2a2 2 0 1 1 0-4h.2a2 2 0 0 0 1.4-3.4L3 4.2A2 2 0 1 1 5.8 1.4l.1.1a2 2 0 0 0 3.4-1.4V0a2 2 0 1 1 4 0v.2a2 2 0 0 0 3.4 1.4l.1-.1A2 2 0 1 1 19.6 4l-.1.1a2 2 0 0 0 1.4 3.4h.2a2 2 0 1 1 0 4h-.2a2 2 0 0 0-1.5 3.5Z"></path></symbol>
+  <symbol id="i-house" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"></path><path d="M5 9v11h14V9M9 20v-6h6v6"></path></symbol>
+  <symbol id="i-share-2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"></path></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"></path></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m18 6-12 12M6 6l12 12"></path></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 22c4 0 7-2.7 7-6.5 0-2.7-1.5-5.1-4.5-7.5.2 2.2-1 3.5-2.5 4.5.2-3.8-1.5-6.5-4-8.5.2 4.5-3 6.5-3 11.5C5 19.3 8 22 12 22Z"></path></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"></path><path d="M7 6H4v2a4 4 0 0 0 4 4M17 6h3v2a4 4 0 0 1-4 4"></path></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></symbol>
+  <symbol id="i-circle-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m9 9 6 6M15 9l-6 6"></path></symbol>
+  <symbol id="i-timer" viewBox="0 0 24 24"><path d="M12 8v4l2 2M9 2h6M12 2v2M5.6 5.6l1.4 1.4M18.4 5.6 17 7"></path><circle cx="12" cy="13" r="7"></circle></symbol>
+  <symbol id="i-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></symbol>
+  <symbol id="i-volume-2" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5ZM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"></path></symbol>
+  <symbol id="i-vibrate" viewBox="0 0 24 24"><path d="M6 8v8M18 8v8M3 10v4M21 10v4M9 5h6v14H9z"></path></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18h1.5a1.5 1.5 0 0 0 0-3H12a2 2 0 0 1 0-4h2a7 7 0 0 0 0-14Z"></path><path d="M7.5 10h.01M8 6.5h.01M13 6h.01M17 9h.01"></path></symbol>
+</svg>
+<div id="countdown-screen" class="countdown-screen" hidden aria-live="assertive">
+  <div id="countdown-number" class="countdown-number"></div>
+</div>
+<main>
+  <header>
+    <h1><svg class="ic" aria-hidden="true"><use href="#i-timer"></use></svg> STOP THE <b>CLOCK</b></h1>
+    <button id="homebtn" class="icon" type="button" aria-label="Home" hidden><svg class="ic" aria-hidden="true"><use href="#i-house"></use></svg></button>
+  </header>
+
+  <!-- HOME -->
+  <section id="home-screen" class="screen active">
+    <p class="tag">Challenge your inner clock. One phone, one hidden timer.</p>
+    <div id="modes" class="stack"></div>
+    <div class="row2">
+      <button class="btn ghost" type="button" data-go="stats"><svg class="ic" aria-hidden="true"><use href="#i-chart-column"></use></svg> Stats</button>
+      <button class="btn ghost" type="button" data-go="settings"><svg class="ic" aria-hidden="true"><use href="#i-settings"></use></svg> Settings</button>
+    </div>
+    <p id="home-status" class="status" role="status"></p>
+  </section>
+
+  <!-- SETUP -->
+  <section id="setup-screen" class="screen">
+    <h2 id="setup-title"></h2>
+    <p id="mode-info" class="muted"></p>
+    <div id="players" class="stack"></div>
+    <div class="actions">
+      <button id="add-player" class="btn ghost" type="button"><svg class="ic" aria-hidden="true"><use href="#i-plus"></use></svg> Add player</button>
+      <label id="rounds-wrap">Rounds
+        <select id="rounds"><option value="1">1</option><option value="3" selected>3</option><option value="5">5</option><option value="10">10</option></select>
+      </label>
+      <button id="start-match" class="btn" type="button">Start Match</button>
+    </div>
+    <p id="setup-status" class="status warn" role="alert"></p>
+  </section>
+
+  <!-- PASS -->
+  <section id="pass-screen" class="screen center">
+    <p class="muted" id="pass-round"></p>
+    <p id="pass-banner" class="chip" hidden></p>
+    <h2>Pass the phone to</h2>
+    <div class="big" id="pass-name" style="font-size:clamp(2rem,10vw,3.4rem)"></div>
+    <p id="pass-target" class="chip" style="margin-top:18px;font-size:1.3rem"></p>
+    <p id="pass-note" class="muted"></p>
+    <div class="actions"><button id="ready" class="btn" type="button">I'm ready</button></div>
+  </section>
+
+  <!-- GAME -->
+  <section id="game-screen" class="screen center">
+    <h2 id="game-name"></h2>
+    <p id="game-round" class="muted"></p>
+    <span id="target-chip" class="chip"></span>
+    <button id="timer-btn" class="timer-btn" type="button" data-state="start">START</button>
+    <div id="pulse" class="pulse" aria-hidden="true" style="visibility:hidden"></div>
+    <p id="game-status" class="status" role="status"></p>
+  </section>
+
+  <!-- TURN RESULT -->
+  <section id="turn-screen" class="screen">
+    <h2 class="center">Your result</h2>
+    <div id="turn-result" class="card"></div>
+    <div class="actions"><button id="next-turn" class="btn" type="button">Next</button></div>
+  </section>
+
+  <!-- ROUND SUMMARY -->
+  <section id="round-screen" class="screen">
+    <h2 id="round-title"></h2>
+    <p id="round-note" class="muted"></p>
+    <div id="round-results" class="stack"></div>
+    <div class="actions"><button id="next-round" class="btn" type="button">Next round</button></div>
+  </section>
+
+  <!-- FINAL -->
+  <section id="final-screen" class="screen">
+    <h2>Final result</h2>
+    <p id="winner" class="winner"></p>
+    <div id="board-wrap">
+      <div class="tw card"><table><thead id="lb-head"></thead><tbody id="lb-body"></tbody></table></div>
+      <h3>Round by round</h3>
+      <div id="round-table" class="tw card"></div>
+    </div>
+    <div class="actions">
+      <button id="share" class="btn" type="button"><svg class="ic" aria-hidden="true"><use href="#i-share-2"></use></svg> Share result</button>
+      <button id="same-players" class="btn ghost" type="button">Play again (same players)</button>
+      <button id="new-match" class="btn ghost" type="button">Home</button>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section id="stats-screen" class="screen">
+    <h2><svg class="ic" aria-hidden="true"><use href="#i-chart-column"></use></svg> <span class="highlight">Statistics</span></h2>
+    <div id="stats-body" class="stack"></div>
+    <div class="actions"><button id="reset-stats" class="btn ghost" type="button">Reset all data</button></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section id="settings-screen" class="screen">
+    <h2><svg class="ic" aria-hidden="true"><use href="#i-settings"></use></svg> <span class="highlight">Settings</span></h2>
+    <div class="stack card">
+      <label class="chk"><input type="checkbox" id="set-sound"> <svg class="ic" aria-hidden="true"><use href="#i-volume-2"></use></svg> Sound effects</label>
+      <label class="chk"><input type="checkbox" id="set-vibrate"> <svg class="ic" aria-hidden="true"><use href="#i-vibrate"></use></svg> Vibration</label>
+      <label class="chk"><input type="checkbox" id="set-countdown"> Countdown 3-2-1</label>
+      <label><svg class="ic" aria-hidden="true"><use href="#i-palette"></use></svg> Theme
+        <select id="set-theme"><option value="paper">Paper</option><option value="mint">Mint</option><option value="lavender">Lavender</option></select>
+      </label>
+      <label>Shortest target (1–10 s)<input id="set-min" type="number" inputmode="numeric" min="1" max="10"></label>
+      <label>Longest target (2–11 s)<input id="set-max" type="number" inputmode="numeric" min="2" max="11"></label>
+      <p id="set-status" class="status warn" role="alert"></p>
+    </div>
+  </section>
+</main>
+
+<script>
+"use strict";
+/* =====================================================================
+   ENGINE – pure functions, no DOM. Safe to move to engine/*.js later.
+   ===================================================================== */
+function randomTarget(rnd = Math.random, min = 1, max = 11) {
+  return Math.floor(rnd() * (max - min + 1)) + min;
+}
+function hashStr(s) {                       // small string hash for daily seed
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function seededRandom(seed) {               // mulberry32
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function dateKey(d = new Date()) {
+  const p = (n) => String(n).padStart(2, "0");
+  return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+}
+function shiftKey(key, days) {
+  const [y, m, d] = key.split("-").map(Number);
+  return dateKey(new Date(y, m - 1, d + days));
+}
+function dailyTarget(key) { return randomTarget(seededRandom(hashStr("tb-" + key)), 1, 11); }
+function dailyStreak(done, todayKey) {
+  let k = done[todayKey] ? todayKey : shiftKey(todayKey, -1), n = 0;
+  while (done[k]) { n++; k = shiftKey(k, -1); }
+  return n;
+}
+function calcError(actual, target) { return Math.round(Math.abs(actual - target) * 100) / 100; }
+function accuracy(error, target) { return Math.max(0, Math.min(100, 100 - (100 * error / target))); }
+function label(error, target) {
+  if (error === 0) return "Perfect";
+  const s = Math.round(accuracy(error, target) * 100) / 100;
+  if (s >= 99) return "Incredible";
+  if (s >= 97) return "Excellent";
+  if (s >= 93) return "Great";
+  if (s >= 85) return "Good";
+  if (s >= 70) return "Getting Better";
+  return "Keep Practicing";
+}
+function labelEmoji(l) {
+  return "";
+}
+const PLAYER_COLORS = ["#ff6b6b", "#4dabf7", "#ffd43b", "#69db7c", "#da77f2", "#ffa94d", "#38d9a9", "#f783ac", "#a9e34b", "#74c0fc"];
+function playerColor(index) {
+  return PLAYER_COLORS[((index % PLAYER_COLORS.length) + PLAYER_COLORS.length) % PLAYER_COLORS.length];
+}
+function rankPlayers(players) {             // 1) lowest total error 2) lowest worst round 3) shared rank
+  const sorted = players.map((player, index) => {
+    const total = Math.round(player.results.reduce((s, r) => s + r.error, 0) * 100) / 100;
+    const worst = player.results.length ? Math.max(...player.results.map((r) => r.error)) : 0;
+    return { player, index, total, worst };
+  }).sort((a, b) => a.total - b.total || a.worst - b.worst || a.index - b.index);
+  let rank = 0, prev = null;
+  return sorted.map((e, i) => {
+    if (!prev || e.total !== prev.total || e.worst !== prev.worst) rank = i + 1;
+    prev = e;
+    return { ...e, rank };
+  });
+}
+function assignTitles(players) {
+  const ranked = rankPlayers(players);
+  const ranks = new Map(ranked.map((entry) => [entry.player, entry.rank]));
+  const eligible = players.length > 1;
+  const spreads = players.map((player) => player.results.length >= 3
+    ? Math.max(...player.results.map((result) => result.error)) - Math.min(...player.results.map((result) => result.error))
+    : Infinity);
+  const lowestSpread = Math.min(...spreads);
+  const largestError = Math.max(...players.flatMap((player) => player.results.map((result) => result.error)), 0);
+  const lastRank = Math.max(...ranked.map((entry) => entry.rank));
+  return players.map((player, index) => {
+    const results = player.results;
+    const allEarly = results.length >= 2 && results.every((result) => result.actual - result.target < 0);
+    const allLate = results.length >= 2 && results.every((result) => result.actual - result.target > 0);
+    if (results.some((result) => result.error === 0)) return "Time Wizard";
+    if (eligible && ranks.get(player) === 1) return "The Human Clock";
+    if (allEarly) return "Too Early Eddie";
+    if (allLate) return "Always Late Larry";
+    if (eligible && results.length >= 3 && spreads[index] === lowestSpread) return "Mr. Steady";
+    if (eligible && results.some((result) => result.error === largestError)) return "Wild Guesser";
+    if (eligible && ranks.get(player) === lastRank && ranks.get(player) !== 1) return "Needs a Watch";
+    return "Clock Rookie";
+  });
+}
+/* Survival: allowed error (% of target) shrinks every round: 20, 18, 16 ... min 3 */
+function survivalLimitPct(round) { return Math.max(3, 20 - 2 * (round - 1)); }
+function survivalStep(entries, round, allowRescue) {   // entries: [{i, error, target}]
+  const pct = survivalLimitPct(round);
+  const fails = entries.filter((e) => 100 * e.error / e.target > pct);
+  if (fails.length === entries.length && allowRescue) {  // everybody missed: closest survive
+    const best = Math.min(...entries.map((e) => e.error));
+    return { out: entries.filter((e) => e.error > best).map((e) => e.i), rescued: true, pct };
+  }
+  return { out: fails.map((e) => e.i), rescued: false, pct };
+}
+function survivalRank(players) {            // players: {results, out (round number or null)}
+  const sorted = players.map((player, index) => {
+    const key = player.out === null ? Infinity : player.out;
+    const total = Math.round(player.results.reduce((s, r) => s + r.error, 0) * 100) / 100;
+    return { player, index, key, total };
+  }).sort((a, b) => b.key - a.key || a.total - b.total || a.index - b.index);
+  let rank = 0, prev = null;
+  return sorted.map((e, i) => {
+    if (!prev || e.key !== prev.key || e.total !== prev.total) rank = i + 1;
+    prev = e;
+    return { ...e, rank };
+  });
+}
+/* ===================== END ENGINE ===================== */
+
+/* =====================================================================
+   STORAGE
+   ===================================================================== */
+const KEY = "timebattle.v2";
+function defaults() {
+  return { settings: { sound: true, vibrate: true, countdown: true, theme: "paper", min: 1, max: 11 },
+           names: ["Player 1", "Player 2"], history: [], daily: {}, survBest: 0 };
+}
+function load() {
+  try {
+    const d = JSON.parse(localStorage.getItem(KEY)) || {};
+    const base = defaults();
+    const out = Object.assign(base, d, { settings: Object.assign(base.settings, d.settings || {}) });
+    if (!Number.isInteger(out.settings.min) || !Number.isInteger(out.settings.max) ||
+        out.settings.min < 1 || out.settings.max > 11 || out.settings.min >= out.settings.max) {
+      out.settings.min = 1;
+      out.settings.max = 11;
+    }
+    if (!["paper", "mint", "lavender"].includes(out.settings.theme)) out.settings.theme = "paper";
+    if (typeof out.settings.countdown !== "boolean") out.settings.countdown = true;
+    if (!Array.isArray(out.names) || !out.names.length || out.names.length > 10) out.names = defaults().names;
+    if (!Array.isArray(out.history)) out.history = [];
+    return out;
+  } catch (e) { return defaults(); }
+}
+let store = load();
+function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* ignore */ } }
+
+/* =====================================================================
+   UI HELPERS
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+const icon = (name, className = "") => '<svg class="ic ' + className + '" aria-hidden="true"><use href="#i-' + name + '"></use></svg>';
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+function playerBadge(index, name) {
+  return '<span class="player-badge"><span class="player-dot" style="background:' + playerColor(index) + '"></span><span class="player-number">P' + (index + 1) + '</span> ' + esc(name) + '</span>';
+}
+function titleChip(title) {
+  return '<small class="title-chip">' + esc(title) + '</small>';
+}
+const MODES = {
+  friends:  { title: "Classic / Friends", icon: '<svg class="ic" aria-hidden="true"><use href="#i-target"></use></svg>', desc: "1–10 players, one phone, same target for all." },
+  blind:    { title: "Blind Challenge",   icon: '<svg class="ic" aria-hidden="true"><use href="#i-eye-off"></use></svg>', desc: "Target shows for 3 seconds, then it\'s hidden!" },
+  survival: { title: "Survival",          icon: '<svg class="ic" aria-hidden="true"><use href="#i-skull"></use></svg>', desc: "Limit gets tighter every round. Last one standing wins." },
+  daily:    { title: "Daily Challenge",   icon: '<svg class="ic" aria-hidden="true"><use href="#i-calendar-days"></use></svg>', desc: "Same target for everyone today. One try." }
+};
+const S = { mode: "friends", draft: [], players: [], rounds: 3, round: 0, player: 0, target: 0,
+            startedAt: 0, stopped: false, last: null, token: 0, screen: "home", finished: false, share: "", countdownActive: false };
+
+let toastTimer = 0;
+function toast(msg, ms = 2200) {
+  let t = $("toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; t.className = "toast"; document.body.appendChild(t); }
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, ms);
+}
+function applyTheme() { document.documentElement.dataset.theme = store.settings.theme; }
+function show(name) {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
+  $(name + "-screen").classList.add("active");
+  $("homebtn").hidden = name === "home";
+  S.screen = name; window.scrollTo(0, 0);
+}
+/* Sound + vibration (both optional) */
+let ac = null;
+function tone(f, d, type = "sine", vol = 0.15, at = 0) {
+  if (!store.settings.sound) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + at;
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + d);
+    o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + d);
+  } catch (e) { /* ignore */ }
+}
+const SFX = {
+  start: () => tone(660, 0.1, "triangle"),
+  stop:  () => tone(330, 0.12, "triangle"),
+  good:  () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, "sine", 0.15, i * 0.09)),
+  ok:    () => { tone(440, 0.15); tone(523, 0.2, "sine", 0.15, 0.12); },
+  bad:   () => tone(180, 0.3, "sawtooth", 0.07)
+};
+function buzz(ms) { if (store.settings.vibrate && navigator.vibrate) navigator.vibrate(ms); }
+let wake = null;
+async function lockWake() { try { if (navigator.wakeLock) wake = await navigator.wakeLock.request("screen"); } catch (e) { /* ignore */ } }
+function freeWake() { try { if (wake) wake.release(); } catch (e) { /* ignore */ } wake = null; }
+function confetti() {
+  if (reduced) return;
+  const w = document.createElement("div"); w.className = "confetti";
+  for (let i = 0; i < 28; i++) {
+    const s = document.createElement("span");
+    s.textContent = "■";
+    s.style.left = Math.random() * 100 + "%";
+    s.style.animationDelay = Math.random() * 0.5 + "s";
+    s.style.fontSize = 16 + Math.random() * 16 + "px";
+    w.appendChild(s);
+  }
+  document.body.appendChild(w); setTimeout(() => w.remove(), 3200);
+}
+
+/* =====================================================================
+   HOME + SETUP
+   ===================================================================== */
+function renderHome() {
+  const key = dateKey(), d = store.daily[key], streak = dailyStreak(store.daily, key);
+  $("modes").innerHTML = Object.entries(MODES).map(([k, m]) => {
+    let extra = "";
+    if (k === "daily") extra = d ? " " + icon("check") + " Done today (" + d.e.toFixed(2) + "s off)" : (streak ? " " + icon("flame") + " " + streak + "-day streak" : "");
+    return '<button class="card mode" type="button" data-mode="' + k + '"><span class="ico">' + m.icon +
+      '</span><span><b>' + m.title + '</b><small>' + m.desc + extra + '</small></span></button>';
+  }).join("");
+}
+function goHome() {
+  if (["pass", "game", "turn", "round"].includes(S.screen) && !confirm("Quit this match?")) return;
+  S.token++; S.countdownActive = false; $("countdown-screen").hidden = true; freeWake(); renderHome(); $("home-status").textContent = ""; show("home");
+}
+function openMode(k) {
+  S.mode = k;
+  if (k === "daily") {
+    const key = dateKey(), d = store.daily[key];
+    if (d) { $("home-status").textContent = "Today's challenge is done: " + d.e.toFixed(2) + "s off on " + d.t + "s. Come back tomorrow! " + dailyStreak(store.daily, key) + "-day streak"; return; }
+    startMatch(); return;
+  }
+  const info = {
+    friends: "Everyone gets the same target. Lowest total error wins. 1 player = solo practice.",
+    blind: "Memorize the target (3 seconds), then stop the hidden timer from memory.",
+    survival: "Stay within the allowed error or you're out. The limit shrinks every round."
+  };
+  $("setup-title").innerHTML = MODES[k].icon + " " + MODES[k].title;
+  $("mode-info").textContent = info[k];
+  $("rounds-wrap").hidden = k === "survival";
+  S.draft = store.names.slice();
+  renderPlayers(); $("setup-status").textContent = ""; show("setup");
+}
+function renderPlayers() {
+  const box = $("players"); box.innerHTML = "";
+  S.draft.forEach((name, i) => {
+    const row = document.createElement("div"); row.className = "prow";
+    row.innerHTML = '<span class="player-marker"><span class="player-dot" style="background:' + playerColor(i) + '"></span><span>P' + (i + 1) + '</span></span>';
+    const inp = document.createElement("input");
+    inp.value = name; inp.maxLength = 14; inp.setAttribute("aria-label", "Player " + (i + 1) + " name");
+    inp.addEventListener("input", () => { S.draft[i] = inp.value; });
+    const x = document.createElement("button");
+    x.type = "button"; x.className = "x"; x.innerHTML = '<svg class="ic" aria-hidden="true"><use href="#i-x"></use></svg>'; x.setAttribute("aria-label", "Remove player " + (i + 1));
+    x.disabled = S.draft.length <= 1;
+    x.addEventListener("click", () => { S.draft.splice(i, 1); renderPlayers(); });
+    row.append(inp, x); box.appendChild(row);
+  });
+  $("add-player").disabled = S.draft.length >= 10;
+}
+function addPlayer() {
+  if (S.draft.length >= 10) return;
+  let n = S.draft.length + 1;
+  while (S.draft.some((x) => x.trim().toLowerCase() === "player " + n)) n++;
+  S.draft.push("Player " + n); renderPlayers();
+}
+function nextTarget() {
+  if (S.mode === "daily") return dailyTarget(dateKey());
+  return randomTarget(Math.random, store.settings.min, store.settings.max);
+}
+function startMatch() {
+  let names;
+  if (S.mode === "daily") names = ["You"];
+  else {
+    names = S.draft.map((n) => n.trim());
+    if (names.some((n) => !n)) { $("setup-status").textContent = "Every player needs a name."; return; }
+    if (new Set(names.map((n) => n.toLowerCase())).size !== names.length) { $("setup-status").textContent = "Player names must be unique."; return; }
+    store.names = names; save();
+  }
+  S.players = names.map((name) => ({ name, results: [], out: null }));
+  S.rounds = S.mode === "survival" ? 30 : S.mode === "daily" ? 1 : Number($("rounds").value);
+  S.round = 0; S.player = 0; S.target = nextTarget(); S.finished = false;
+  $("setup-status").textContent = "";
+  beginTurn();
+}
+const nextAlive = (i) => { for (let j = i + 1; j < S.players.length; j++) if (S.players[j].out === null) return j; return -1; };
+const firstAlive = () => S.players.findIndex((p) => p.out === null);
+
+/* =====================================================================
+   TURN FLOW
+   ===================================================================== */
+function beginTurn() {
+  S.token++;
+  const p = S.players[S.player];
+  $("pass-name").innerHTML = playerBadge(S.player, p.name);
+  $("pass-round").textContent = S.mode === "survival" ? "Round " + (S.round + 1)
+    : S.mode === "daily" ? "Daily Challenge · " + dateKey()
+    : "Round " + (S.round + 1) + " of " + S.rounds;
+  $("pass-target").textContent = S.mode === "blind" ? "Target shows for 3 s, then hides" : "Target: " + S.target + " s";
+  $("pass-note").textContent = S.mode === "survival" ? "Stay within ±" + survivalLimitPct(S.round + 1) + "% of the target or you're OUT." : "";
+  const alive = S.players.filter((player) => player.out === null).length;
+  const first = firstAlive();
+  const banners = [];
+  if (!(S.mode === "survival" && S.player === first)) {
+    if (S.mode === "survival" && alive === 2) banners.push("Only 2 left!");
+    if (nextAlive(S.player) < 0 && S.mode !== "survival") banners.push("Last player of this round!");
+    if (S.round + 1 === S.rounds) banners.push("Final round!");
+  }
+  $("pass-banner").textContent = banners.join(" · ");
+  $("pass-banner").hidden = banners.length === 0;
+  show("pass");
+}
+function setBtn(state) {
+  const b = $("timer-btn");
+  b.dataset.state = state;
+  b.innerHTML = state === "replay" ? icon("rotate-ccw") + " REPLAY" : { start: "START", stop: "STOP" }[state];
+  b.classList.toggle("stop", state === "stop");
+}
+function enterGame(tok) {
+  if (tok !== S.token || !S.countdownActive && S.screen !== "pass") return;
+  S.countdownActive = false;
+  const btn = $("timer-btn");
+  $("game-name").innerHTML = playerBadge(S.player, S.players[S.player].name);
+  $("countdown-screen").hidden = true;
+  $("game-round").textContent = S.mode === "daily" ? "Daily Challenge" : "Round " + (S.round + 1) + (S.mode === "survival" ? "" : " of " + S.rounds);
+  setBtn("start"); S.startedAt = 0; S.stopped = false;
+  $("pulse").style.visibility = "hidden"; $("game-status").textContent = ""; $("game-status").classList.remove("warn");
+  if (S.mode === "blind") {
+    $("target-chip").textContent = "Memorize: " + S.target + " s";
+    btn.disabled = true; $("game-status").textContent = "Target hides in 3 seconds…";
+    setTimeout(() => {
+      if (tok !== S.token) return;
+      $("target-chip").textContent = "Target: ?? s (hidden)";
+      btn.disabled = false; $("game-status").textContent = "";
+    }, 3000);
+  } else {
+    $("target-chip").textContent = "Target: " + S.target + " s"; btn.disabled = false;
+  }
+  show("game");
+}
+function startCountdown(tok) {
+  S.countdownActive = true;
+  $("countdown-screen").hidden = false;
+  const values = ["3", "2", "1", "GO"];
+  let step = 0;
+  const advance = () => {
+    if (tok !== S.token || !S.countdownActive) return;
+    const number = $("countdown-number");
+    number.textContent = values[step];
+    number.style.animation = "none";
+    void number.offsetWidth;
+    number.style.animation = reduced ? "none" : "countdown-pop .9s ease both";
+    step++;
+    if (step < values.length) {
+      setTimeout(advance, 1000);
+    } else {
+      setTimeout(() => enterGame(tok), 1000);
+    }
+  };
+  advance();
+}
+function ready() {
+  if (S.countdownActive || S.screen !== "pass") return;
+  const tok = ++S.token, btn = $("timer-btn");
+  $("game-name").innerHTML = playerBadge(S.player, S.players[S.player].name);
+  if (store.settings.countdown) {
+    startCountdown(tok);
+    return;
+  }
+  enterGame(tok);
+}
+function pressTimer() {
+  const btn = $("timer-btn");
+  if (btn.disabled || S.stopped) return;
+  const st = btn.dataset.state;
+  if (st === "replay") { ready(); return; }
+  if (st === "start") {
+    S.startedAt = performance.now(); setBtn("stop");
+    $("pulse").style.visibility = "visible"; SFX.start(); buzz(15); lockWake();
+    return;
+  }
+  const now = performance.now();
+  if (now - S.startedAt < 300) return;            // ignore accidental double tap
+  S.stopped = true; btn.disabled = true; freeWake(); SFX.stop(); buzz(25);
+  const actual = (now - S.startedAt) / 1000;
+  S.last = { actual, error: calcError(actual, S.target), target: S.target };
+  showTurn();
+}
+function interruptTurn() {
+  if (S.countdownActive) {
+    S.countdownActive = false;
+    S.token++;
+    $("countdown-screen").hidden = true;
+    $("pass-note").textContent = "Countdown cancelled because the page was hidden. Tap I'm ready to try again.";
+    show("pass");
+    return;
+  }
+  if (S.screen !== "game" || !S.startedAt || S.stopped) return;
+  S.startedAt = 0; S.last = null; freeWake();
+  setBtn("replay"); $("pulse").style.visibility = "hidden";
+  $("game-status").textContent = "Interrupted (page was hidden). Replay the same target.";
+  $("game-status").classList.add("warn"); $("timer-btn").disabled = false;
+}
+function showTurn() {
+  const r = S.last, tok = ++S.token;
+  const lab = label(r.error, r.target), acc = accuracy(r.error, r.target);
+  const range = Math.max(1, r.target * 0.25);
+  const pos = 50 + Math.max(-1, Math.min(1, (r.actual - r.target) / range)) * 50;
+  const dir = r.error === 0 ? "Exact" : r.actual < r.target ? "Early" : "Late";
+  $("turn-result").innerHTML =
+    '<div class="center"><div class="big" id="tr-num">0.00</div><div class="muted">seconds · target ' + r.target + ' s</div></div>' +
+    '<div class="scale"><i class="mid"></i><i class="dot" id="tr-dot"></i></div>' +
+    '<div class="scale-lbl"><span>Early</span><span>Late</span></div>' +
+    '<div class="later" id="tr-more"><div class="verdict center"><span class="chip">' + dir + '</span> <span class="chip">' + labelEmoji(lab) + ' ' + lab + '</span></div>' +
+    '<dl><dt>Difference</dt><dd>' + r.error.toFixed(2) + ' s</dd><dt>Timing</dt><dd>' + dir +
+    '</dd><dt>Accuracy</dt><dd>' + acc.toFixed(1) + '%</dd></dl></div>';
+  $("next-turn").disabled = true; show("turn");
+  setTimeout(() => { const d = $("tr-dot"); if (d && tok === S.token) d.style.left = pos + "%"; }, 60);
+  const t0 = performance.now(), dur = reduced ? 1 : 900, num = $("tr-num");
+  const finish = () => {
+    if (tok !== S.token) return;
+    num.textContent = r.actual.toFixed(2);
+    $("tr-more").classList.add("show"); $("next-turn").disabled = false;
+    if (acc >= 99) { SFX.good(); confetti(); buzz([30, 40, 30]); } else if (acc >= 85) SFX.ok(); else SFX.bad();
+  };
+  (function step(now) {
+    if (tok !== S.token) return;
+    const p = Math.min(1, (now - t0) / dur);
+    num.textContent = (r.actual * (1 - Math.pow(1 - p, 3))).toFixed(2);
+    if (p < 1) requestAnimationFrame(step); else finish();
+  })(t0);
+}
+function nextTurn() {
+  if (!S.last || $("next-turn").disabled) return;
+  const p = S.players[S.player];
+  p.results.push(S.last);
+  store.history.push({ n: p.name, m: S.mode, t: S.last.target, e: S.last.error,
+                       a: Math.round(accuracy(S.last.error, S.last.target) * 10) / 10, d: Date.now() });
+  if (store.history.length > 1000) store.history.splice(0, store.history.length - 1000);
+  save(); S.last = null;
+  if (S.mode === "daily") { showFinal(); return; }
+  const nx = nextAlive(S.player);
+  if (nx >= 0) { S.player = nx; beginTurn(); } else endRound();
+}
+function endRound() {
+  const played = S.players.map((p, i) => ({ p, i })).filter((x) => x.p.out === null);
+  let step = null;
+  if (S.mode === "survival") {
+    step = survivalStep(played.map((x) => ({ i: x.i, error: x.p.results[S.round].error, target: S.target })), S.round + 1, played.length > 1);
+    step.out.forEach((i) => { S.players[i].out = S.round + 1; });
+  }
+  const rows = played.slice().sort((a, b) => a.p.results[S.round].error - b.p.results[S.round].error);
+  let rank = 0, prev = null;
+  $("round-title").textContent = "Round " + (S.round + 1) + " summary · target " + S.target + " s";
+  $("round-note").textContent = step ? "Limit this round: ±" + step.pct + "%" + (step.rescued ? " · Everyone missed, so the closest survive!" : "") : "";
+  $("round-results").innerHTML = rows.map((x, idx) => {
+    const r = x.p.results[S.round];
+    if (prev === null || r.error !== prev) rank = idx + 1;
+    prev = r.error;
+    const medal = S.mode === "survival" ? (x.p.out === null ? icon("check") + " Survived" : icon("circle-x") + " Eliminated") : medalIcon(rank);
+    return '<div class="card rrow' + (x.p.out !== null ? " out" : "") + '"><span>' + medal + ' ' + playerBadge(x.i, x.p.name) + '</span><span>' +
+      r.actual.toFixed(2) + 's · ±' + r.error.toFixed(2) + 's · ' + label(r.error, r.target) + '</span></div>';
+  }).join("");
+  const alive = S.players.filter((p) => p.out === null).length;
+  S.finished = S.mode === "survival"
+    ? (alive === 0 || (S.players.length > 1 && alive <= 1) || S.round + 1 >= S.rounds)
+    : S.round + 1 >= S.rounds;
+  $("next-round").textContent = S.finished ? "See final result" : "Next round";
+  show("round");
+}
+function nextRound() {
+  if (S.finished) { showFinal(); return; }
+  S.round++; S.player = firstAlive(); S.target = nextTarget(); beginTurn();
+}
+
+/* =====================================================================
+   FINAL
+   ===================================================================== */
+function medalIcon(rank) {
+  return rank <= 3 ? icon("trophy", "medal rank-" + rank) : String(rank);
+}
+const medal = (r) => medalIcon(r);
+function showFinal() {
+  const link = location.protocol.indexOf("http") === 0 ? "\n" + location.href.split("#")[0] : "";
+  const solo = S.players.length === 1;
+  const titles = assignTitles(S.players);
+  const titleText = S.players.map((player, index) => player.name + " - " + titles[index]).join("; ");
+  $("board-wrap").hidden = false; $("same-players").hidden = false; $("share").hidden = false;
+  if (S.mode === "daily") {
+    const key = dateKey(), r = S.players[0].results[0];
+    store.daily[key] = { e: r.error, t: r.target, a: Math.round(accuracy(r.error, r.target) * 10) / 10 }; save();
+    const lab = label(r.error, r.target), streak = dailyStreak(store.daily, key);
+    $("winner").innerHTML = lab + " · " + r.error.toFixed(2) + "s off · " + icon("flame") + " " + streak + "-day streak · " + titleChip(titles[0]);
+    $("board-wrap").hidden = true; $("same-players").hidden = true;
+    S.share = "STOP THE CLOCK Daily " + key + "\nTarget " + r.target + "s -> " + r.actual.toFixed(2) + "s (" + r.error.toFixed(2) + "s off)\n" + lab + " · " + streak + "-day streak\n" + titleText + link;
+    if (r.error <= 0.1) confetti();
+  } else if (S.mode === "survival") {
+    const ranked = survivalRank(S.players);
+    const surv = (p) => p.out === null ? S.round + 1 : p.out - 1;
+    const top = ranked.filter((e) => e.rank === 1);
+    const most = Math.max(...S.players.map(surv));
+    if (most > store.survBest) { store.survBest = most; save(); }
+    $("winner").innerHTML = solo ? icon("check") + " You survived " + most + " round" + (most === 1 ? "" : "s") + " (best: " + store.survBest + ")"
+      : (top.length > 1 ? "Shared winners: " + top.map((e) => e.player.name).join(" & ") : icon("trophy") + " Winner: " + top[0].player.name);
+    $("lb-head").innerHTML = "<tr><th>Rank</th><th>Name</th><th>Survived</th><th>Total error</th></tr>";
+    $("lb-body").innerHTML = ranked.map((e) => "<tr><td>" + medal(e.rank) + "</td><td>" + playerBadge(e.index, e.player.name) + titleChip(titles[e.index]) + "</td><td>" + surv(e.player) + " rd</td><td>" + e.total.toFixed(2) + "s</td></tr>").join("");
+    S.share = "STOP THE CLOCK - Survival\n" + (solo ? "Survived " + most + " rounds" : "Winner: " + top.map((e) => e.player.name).join(" & ") + " (" + most + " rounds)") + "\n" + titleText + link;
+    renderRoundTable(ranked); if (!solo || most >= 5) confetti();
+  } else {
+    const ranked = rankPlayers(S.players);
+    const top = ranked.filter((e) => e.rank === 1);
+    $("winner").innerHTML = solo ? "Total error: " + ranked[0].total.toFixed(2) + " s"
+      : (top.length > 1 ? "Shared winners: " + top.map((e) => e.player.name).join(" & ") : icon("trophy") + " Winner: " + top[0].player.name);
+    $("lb-head").innerHTML = "<tr><th>Rank</th><th>Name</th><th>Total error</th><th>Worst</th></tr>";
+    $("lb-body").innerHTML = ranked.map((e) => "<tr><td>" + medal(e.rank) + "</td><td>" + playerBadge(e.index, e.player.name) + titleChip(titles[e.index]) + "</td><td>" + e.total.toFixed(2) + "s</td><td>" + e.worst.toFixed(2) + "s</td></tr>").join("");
+    S.share = "STOP THE CLOCK - " + MODES[S.mode].title + "\n" + (solo ? "Total error " + ranked[0].total.toFixed(2) + "s over " + S.rounds + " round(s)" : top.map((e) => e.player.name).join(" & ") + " won (" + top[0].total.toFixed(2) + "s total error)") + "\n" + titleText + link;
+    renderRoundTable(ranked); if (!solo) confetti();
+  }
+  show("final");
+}
+function renderRoundTable(ranked) {
+  const cols = Math.max(...S.players.map((p) => p.results.length));
+  let h = "<table><thead><tr><th>Name</th>";
+  for (let i = 1; i <= cols; i++) h += "<th>R" + i + "</th>";
+  h += "</tr></thead><tbody>";
+  ranked.forEach((e) => {
+    h += "<tr><td>" + playerBadge(e.index, e.player.name) + "</td>";
+    for (let i = 0; i < cols; i++) {
+      const r = e.player.results[i];
+      h += "<td>" + (r ? r.error.toFixed(2) + (e.player.out === i + 1 ? " " + icon("circle-x") : "") : "–") + "</td>";
+    }
+    h += "</tr>";
+  });
+  $("round-table").innerHTML = h + "</tbody></table>";
+}
+async function shareResult() {
+  try {
+    if (navigator.share) { await navigator.share({ text: S.share }); return; }
+    await navigator.clipboard.writeText(S.share); toast("Copied! Paste it in your chat.");
+  } catch (e) { if (e && e.name !== "AbortError") toast(S.share, 6000); }
+}
+function replaySame() {
+  S.players.forEach((p) => { p.results = []; p.out = null; });
+  S.round = 0; S.player = 0; S.target = nextTarget(); S.finished = false; beginTurn();
+}
+
+/* =====================================================================
+   STATS + SETTINGS
+   ===================================================================== */
+function renderStats() {
+  const h = store.history, key = dateKey();
+  const avg = h.length ? h.reduce((s, x) => s + x.a, 0) / h.length : 0;
+  const best = (list) => list.reduce((b, x) => (!b || x.e < b.e) ? x : b, null);
+  const top = best(h);
+  let html = '<div class="cards4">' +
+    '<div class="card"><b>' + h.length + '</b><span class="muted">Rounds played</span></div>' +
+    '<div class="card"><b>' + (h.length ? avg.toFixed(1) + "%" : "–") + '</b><span class="muted">Avg accuracy</span></div>' +
+    '<div class="card"><b>' + (top ? top.e.toFixed(2) + "s" : "–") + '</b><span class="muted">Best error</span></div>' +
+    '<div class="card"><b>' + icon("flame") + " " + dailyStreak(store.daily, key) + '</b><span class="muted">Daily streak</span></div></div>';
+  html += "<h3>Personal bests by mode</h3><div class='card'><dl>";
+  ["friends", "blind", "daily"].forEach((m) => {
+    const b = best(h.filter((x) => x.m === m));
+    html += "<dt>" + MODES[m].icon + " " + MODES[m].title + "</dt><dd>" + (b ? b.e.toFixed(2) + "s on " + b.t + "s" : "–") + "</dd>";
+  });
+  html += "<dt>" + MODES.survival.icon + " Survival</dt><dd>" + (store.survBest ? store.survBest + " rounds" : "–") + "</dd></dl></div>";
+  const by = {};
+  h.forEach((x) => { const o = by[x.n] || (by[x.n] = { n: x.n, c: 0, s: 0, b: null }); o.c++; o.s += x.a; if (!o.b || x.e < o.b) o.b = x.e; });
+  const rows = Object.values(by).sort((a, b) => b.c - a.c).slice(0, 10);
+  if (rows.length) {
+    html += "<h3>Players</h3><div class='tw card'><table><thead><tr><th>Name</th><th>Rounds</th><th>Avg acc.</th><th>Best</th></tr></thead><tbody>" +
+      rows.map((o) => "<tr><td>" + esc(o.n) + "</td><td>" + o.c + "</td><td>" + (o.s / o.c).toFixed(1) + "%</td><td>" + o.b.toFixed(2) + "s</td></tr>").join("") + "</tbody></table></div>";
+  }
+  const recent = h.slice(-8).reverse();
+  if (recent.length) {
+    html += "<h3>Recent rounds</h3><div class='card'><dl>" +
+      recent.map((x) => "<dt>" + esc(x.n) + " · " + MODES[x.m].icon + " " + x.t + "s</dt><dd>±" + x.e.toFixed(2) + "s</dd>").join("") + "</dl></div>";
+  }
+  $("stats-body").innerHTML = html;
+}
+function renderSettings() {
+  const s = store.settings;
+  
+   $("set-sound").checked = s.sound; $("set-vibrate").checked = s.vibrate; $("set-countdown").checked = s.countdown; $("set-theme").value = s.theme;
+  $("set-min").value = s.min; $("set-max").value = s.max; $("set-status").textContent = "";
+}
+function saveSettings() {
+  const s = store.settings;
+  s.sound = $("set-sound").checked; s.vibrate = $("set-vibrate").checked; s.countdown = $("set-countdown").checked; s.theme = $("set-theme").value;
+  const min = parseInt($("set-min").value, 10), max = parseInt($("set-max").value, 10);
+  if (Number.isFinite(min) && Number.isFinite(max) && min >= 1 && max <= 11 && min < max) {
+    s.min = min; s.max = max; $("set-status").textContent = "";
+  } else $("set-status").textContent = "Targets must be between 1 and 11 seconds, shortest < longest.";
+  applyTheme(); save();
+}
+
+/* =====================================================================
+   WIRING
+   ===================================================================== */
+$("homebtn").addEventListener("click", goHome);
+$("modes").addEventListener("click", (e) => { const b = e.target.closest("[data-mode]"); if (b) openMode(b.dataset.mode); });
+document.querySelectorAll("[data-go]").forEach((b) => b.addEventListener("click", () => {
+  if (b.dataset.go === "stats") renderStats(); else renderSettings();
+  show(b.dataset.go);
+}));
+$("add-player").addEventListener("click", addPlayer);
+$("start-match").addEventListener("click", startMatch);
+$("ready").addEventListener("click", ready);
+$("timer-btn").addEventListener("pointerdown", (e) => { e.preventDefault(); pressTimer(); });
+$("timer-btn").addEventListener("keydown", (e) => { if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); pressTimer(); } });
+$("next-turn").addEventListener("click", nextTurn);
+$("next-round").addEventListener("click", nextRound);
+$("share").addEventListener("click", shareResult);
+$("same-players").addEventListener("click", replaySame);
+$("new-match").addEventListener("click", () => { S.screen = "home"; goHome(); });
+$("reset-stats").addEventListener("click", () => {
+  if (confirm("Delete all stats and history?")) { store.history = []; store.daily = {}; store.survBest = 0; save(); renderStats(); }
+});
+["set-sound", "set-vibrate", "set-countdown", "set-theme", "set-min", "set-max"].forEach((id) => $(id).addEventListener("change", saveSettings));
+document.addEventListener("visibilitychange", () => { if (document.hidden) interruptTurn(); });
+applyTheme(); renderHome();
+
+/* =====================================================================
+   SELF TEST – open the page with #test at the end of the URL
+   ===================================================================== */
+function runSelfTest() {
+  const res = []; const ok = (name, cond) => res.push((cond ? "PASS " : "FAIL ") + name);
+  let good = true;
+  for (let i = 0; i < 200; i++) {
+    const t = randomTarget(Math.random, 1, 11);
+    if (t < 1 || t > 11) good = false;
+    const e = calcError(Math.random() * 70, t), a = accuracy(e, t);
+    if (e < 0 || a < 0 || a > 100) good = false;
+  }
+  ok("targets in range, error >= 0, accuracy 0-100 (200 rounds)", good);
+  ok("label Perfect at 0 error", label(0, 10) === "Perfect");
+  ok("label Incredible at 99%", label(0.1, 10) === "Incredible");
+  ok("label Keep Practicing below 70%", label(4, 10) === "Keep Practicing");
+  const r = rankPlayers([{ results: [{ error: 1 }, { error: 1 }] }, { results: [{ error: 2 }, { error: 0 }] }, { results: [{ error: 1 }, { error: 1 }] }]);
+  ok("tie shares rank 1", r[0].rank === 1 && r[1].rank === 1 && r[2].rank === 3);
+  ok("tiebreak by worst round", rankPlayers([{ results: [{ error: 2 }, { error: 0 }] }, { results: [{ error: 1 }, { error: 1 }] }])[0].player.results[0].error === 1);
+  ok("daily target is stable", dailyTarget("2026-11-21") === dailyTarget("2026-11-21"));
+  const dt = []; for (let d = 1; d <= 30; d++) dt.push(dailyTarget("2026-11-" + String(d).padStart(2, "0")));
+  ok("daily target varies and stays 1-11", new Set(dt).size > 3 && dt.every((x) => x >= 1 && x <= 11));
+  ok("shiftKey crosses month", shiftKey("2026-12-01", -1) === "2026-11-30");
+  ok("streak counts consecutive days", dailyStreak({ "2026-11-21": 1, "2026-11-20": 1, "2026-11-18": 1 }, "2026-11-21") === 2);
+  ok("streak survives until end of today", dailyStreak({ "2026-11-20": 1 }, "2026-11-21") === 1);
+  ok("survival limit shrinks to 3% floor", survivalLimitPct(1) === 20 && survivalLimitPct(9) === 4 && survivalLimitPct(30) === 3);
+  const s1 = survivalStep([{ i: 0, error: 0.5, target: 10 }, { i: 1, error: 3, target: 10 }], 1, true);
+  ok("survival eliminates the one who misses", s1.out.length === 1 && s1.out[0] === 1);
+  const s2 = survivalStep([{ i: 0, error: 5, target: 10 }, { i: 1, error: 3, target: 10 }], 1, true);
+  ok("survival rescues closest when everyone misses", s2.rescued && s2.out.length === 1 && s2.out[0] === 0);
+  const s3 = survivalStep([{ i: 0, error: 5, target: 10 }], 1, false);
+  ok("solo survival can really lose", s3.out.length === 1);
+  const sr = survivalRank([{ out: 2, results: [{ error: 1 }] }, { out: null, results: [{ error: 3 }] }]);
+  ok("survival ranks alive player first", sr[0].index === 1);
+  const colors = Array.from({ length: 10 }, (_, i) => playerColor(i));
+  ok("player colors are unique and wrap safely", new Set(colors).size === 10 && playerColor(10) === playerColor(0) && playerColor(-1) === playerColor(9));
+  const perfect = [{ actual: 10, target: 10, error: 0 }];
+  const early = [{ actual: 8, target: 10, error: 2 }, { actual: 9, target: 10, error: 1 }];
+  const late = [{ actual: 12, target: 10, error: 2 }, { actual: 11, target: 10, error: 1 }];
+  ok("assignTitles Time Wizard", assignTitles([{ results: perfect }])[0] === "Time Wizard");
+  ok("assignTitles Too Early Eddie", assignTitles([{ results: early }])[0] === "Too Early Eddie");
+  ok("assignTitles Always Late Larry", assignTitles([{ results: late }])[0] === "Always Late Larry");
+  ok("assignTitles winner gets The Human Clock", assignTitles([{ results: [{ actual: 9, target: 10, error: 1 }] }, { results: [{ actual: 7, target: 10, error: 3 }] }])[0] === "The Human Clock");
+  ok("assignTitles works for one player", assignTitles([{ results: [{ actual: 10, target: 10, error: 0 }] }])[0] === "Time Wizard");
+  const text = (good && res.every((x) => x.indexOf("PASS") === 0) ? "ALL PASS" : "SOME FAILED") + "\n" + res.join("\n");
+  console.log(text); toast(text, 12000);
+  return text;
+}
+if (location.hash === "#test") runSelfTest();
+</script>
+</body>
+</html>
