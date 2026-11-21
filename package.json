@@ -1,0 +1,19 @@
+{
+  "name": "stop-the-clock",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build-web.js",
+    "sync": "npm run build && npx cap sync android",
+    "android:debug": "npm run sync && npx cap open android",
+    "android:apk": "npm run sync && cd android && gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/app": "^7.1.0",
+    "@capacitor/core": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
+  }
+}

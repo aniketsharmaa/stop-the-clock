@@ -1,0 +1,11 @@
+{
+  "appId": "com.aniketsharmaa.stoptheclock",
+  "appName": "Stop the Clock",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#f3ecdf",
+    "webContentsDebuggingEnabled": false
+  }
+}

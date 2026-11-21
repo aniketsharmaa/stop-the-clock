@@ -961,6 +961,21 @@ $("reset-stats").addEventListener("click", () => {
 });
 ["set-sound", "set-vibrate", "set-countdown", "set-theme", "set-min", "set-max"].forEach((id) => $(id).addEventListener("change", saveSettings));
 document.addEventListener("visibilitychange", () => { if (document.hidden) interruptTurn(); });
+
+const appPlugin = window.Capacitor && window.Capacitor.Plugins ? window.Capacitor.Plugins.App : null;
+if (appPlugin) {
+  appPlugin.addListener("appStateChange", ({ isActive }) => {
+    if (!isActive) interruptTurn();
+  });
+  appPlugin.addListener("backButton", () => {
+    if (S.screen === "home") {
+      appPlugin.exitApp();
+    } else {
+      goHome();
+    }
+  });
+}
+
 applyTheme(); renderHome();
 
 /* =====================================================================

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Stop the Clock</string>
+    <string name="title_activity_main">Stop the Clock</string>
+    <string name="package_name">com.aniketsharmaa.stoptheclock</string>
+    <string name="custom_url_scheme">com.aniketsharmaa.stoptheclock</string>
+</resources>
