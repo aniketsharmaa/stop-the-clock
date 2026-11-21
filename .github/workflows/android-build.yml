@@ -38,7 +38,13 @@ jobs:
       - name: Install Android SDK packages
         shell: bash
         run: |
-          sdkmanager --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
+          SDKMANAGER="$(find "${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}" "$HOME" -type f -name sdkmanager 2>/dev/null | head -n 1)"
+          if [[ -z "$SDKMANAGER" ]]; then
+            echo "::error::Android sdkmanager was not found"
+            exit 127
+          fi
+          yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
+          "$SDKMANAGER" --install "platform-tools" "platforms;android-36" "build-tools;36.0.0"
 
       - name: Install npm dependencies
         run: npm ci
