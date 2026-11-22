@@ -34,7 +34,12 @@ body {
   user-select: none;
   -webkit-user-select: none;
 }
-main { width: min(760px, 100%); min-height: 100vh; margin: 0 auto; padding: clamp(22px, 4vw, 42px) 20px 60px; }
+main {
+  width: min(760px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top, 0px) + clamp(70px, 12vh, 120px)) 20px 60px;
+}
 header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
 h1 { margin: 0; display: flex; align-items: center; gap: 7px; font-size: clamp(1.6rem, 7vw, 2.3rem); letter-spacing: .5px; font-weight: 900; }
 h1 svg, button svg { fill: none; stroke: var(--text); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -152,8 +157,6 @@ input, select { width: 100%; padding: 10px 12px; background: var(--panel); color
 }
 .timer-btn:active { transform: translate(7px, 7px); box-shadow: none; }
 .timer-btn.stop { background: var(--peach); }
-.pulse { width: 46px; height: 46px; margin: 14px auto 0; border-radius: 50%; background: var(--lavender); animation: pulse 2.4s ease-in-out infinite; }
-@keyframes pulse { 50% { transform: scale(1.3); opacity: .35; } }
 .scale { position: relative; height: 12px; border: 2px solid var(--line); border-radius: 5px; margin: 26px 8px 6px; background: var(--sky); }
 .scale .mid { position: absolute; left: 50%; top: -7px; bottom: -7px; width: 2px; margin-left: -1px; background: var(--line); }
 .scale .dot { position: absolute; left: 50%; top: 50%; width: 20px; height: 20px; margin: -10px 0 0 -10px; border-radius: 50%; background: var(--peach); border: 2px solid var(--line); transition: left .8s cubic-bezier(.2,.9,.3,1.2); }
@@ -191,12 +194,41 @@ th:not(:first-child), td:not(:first-child) { text-align: right; }
 @keyframes countdown-pop { from { opacity: .2; transform: scale(.65); } 65% { transform: scale(1.08); } to { opacity: 1; transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 @media (min-width: 700px) {
-  main { padding-top: clamp(42px, 7vh, 78px); }
   #setup-screen, #pass-screen, #game-screen, #turn-screen, #round-screen, #final-screen, #stats-screen, #settings-screen {
     width: min(700px, 100%);
     margin: 0 auto;
   }
 }
+.target-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  width: fit-content;
+  min-width: 210px;
+  margin: 10px auto 8px;
+  padding: 12px 22px;
+  border: 3px solid var(--line);
+  border-radius: 14px;
+  background: var(--lavender);
+  box-shadow: 4px 4px 0 var(--line);
+  font-weight: 900;
+}
+.target-display .target-label { font: 800 .78rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-transform: uppercase; }
+.target-display .target-value { font-size: clamp(2.4rem, 12vw, 4rem); line-height: 1; font-variant-numeric: tabular-nums; }
+.running-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 34px;
+  margin: 8px auto 0;
+  font: 800 .85rem ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.running-status .running-dot { width: 14px; height: 14px; border: 2px solid var(--line); border-radius: 50%; background: var(--peach); }
+.running-status.running .running-dot { background: #69db7c; box-shadow: 0 0 0 5px rgba(105,219,124,.22); }
 </style>
 </head>
 <body>
@@ -271,9 +303,15 @@ th:not(:first-child), td:not(:first-child) { text-align: right; }
   <section id="game-screen" class="screen center">
     <h2 id="game-name"></h2>
     <p id="game-round" class="muted"></p>
-    <span id="target-chip" class="chip"></span>
+    <div id="target-display" class="target-display">
+      <span class="target-label">Target</span>
+      <span id="target-chip" class="target-value"></span>
+    </div>
     <button id="timer-btn" class="timer-btn" type="button" data-state="start">START</button>
-    <div id="pulse" class="pulse" aria-hidden="true" style="visibility:hidden"></div>
+    <div id="running-status" class="running-status" aria-live="polite">
+      <span class="running-dot"></span>
+      <span id="running-status-text">Ready</span>
+    </div>
     <p id="game-status" class="status" role="status"></p>
   </section>
 
@@ -668,17 +706,23 @@ function enterGame(tok) {
   $("countdown-screen").hidden = true;
   $("game-round").textContent = S.mode === "daily" ? "Daily Challenge" : "Round " + (S.round + 1) + (S.mode === "survival" ? "" : " of " + S.rounds);
   setBtn("start"); S.startedAt = 0; S.stopped = false;
-  $("pulse").style.visibility = "hidden"; $("game-status").textContent = ""; $("game-status").classList.remove("warn");
+  $("running-status").classList.remove("running");
+  $("running-status-text").textContent = "Ready";
+  $("game-status").textContent = ""; $("game-status").classList.remove("warn");
   if (S.mode === "blind") {
-    $("target-chip").textContent = "Memorize: " + S.target + " s";
+    $("target-chip").textContent = S.target + " s";
+    $("target-display").querySelector(".target-label").textContent = "Memorize";
     btn.disabled = true; $("game-status").textContent = "Target hides in 3 seconds…";
     setTimeout(() => {
       if (tok !== S.token) return;
-      $("target-chip").textContent = "Target: ?? s (hidden)";
+      $("target-chip").textContent = "?? s";
+      $("target-display").querySelector(".target-label").textContent = "Hidden";
       btn.disabled = false; $("game-status").textContent = "";
     }, 3000);
   } else {
-    $("target-chip").textContent = "Target: " + S.target + " s"; btn.disabled = false;
+    $("target-chip").textContent = S.target + " s";
+    $("target-display").querySelector(".target-label").textContent = "Target";
+    btn.disabled = false;
   }
   show("game");
 }
@@ -720,7 +764,9 @@ function pressTimer() {
   if (st === "replay") { ready(); return; }
   if (st === "start") {
     S.startedAt = performance.now(); setBtn("stop");
-    $("pulse").style.visibility = "visible"; SFX.start(); buzz(15); lockWake();
+    $("running-status").classList.add("running");
+    $("running-status-text").textContent = "Timer running";
+    SFX.start(); buzz(15); lockWake();
     return;
   }
   const now = performance.now();
@@ -741,7 +787,9 @@ function interruptTurn() {
   }
   if (S.screen !== "game" || !S.startedAt || S.stopped) return;
   S.startedAt = 0; S.last = null; freeWake();
-  setBtn("replay"); $("pulse").style.visibility = "hidden";
+  setBtn("replay");
+  $("running-status").classList.remove("running");
+  $("running-status-text").textContent = "Interrupted";
   $("game-status").textContent = "Interrupted (page was hidden). Replay the same target.";
   $("game-status").classList.add("warn"); $("timer-btn").disabled = false;
 }
@@ -906,6 +954,7 @@ function renderStats() {
     const b = best(h.filter((x) => x.m === m));
     html += "<dt>" + MODES[m].icon + " " + MODES[m].title + "</dt><dd>" + (b ? b.e.toFixed(2) + "s on " + b.t + "s" : "–") + "</dd>";
   });
+
   html += "<dt>" + MODES.survival.icon + " Survival</dt><dd>" + (store.survBest ? store.survBest + " rounds" : "–") + "</dd></dl></div>";
   const by = {};
   h.forEach((x) => { const o = by[x.n] || (by[x.n] = { n: x.n, c: 0, s: 0, b: null }); o.c++; o.s += x.a; if (!o.b || x.e < o.b) o.b = x.e; });
@@ -924,6 +973,7 @@ function renderStats() {
 function renderSettings() {
   const s = store.settings;
   
+    
    $("set-sound").checked = s.sound; $("set-vibrate").checked = s.vibrate; $("set-countdown").checked = s.countdown; $("set-theme").value = s.theme;
   $("set-min").value = s.min; $("set-max").value = s.max; $("set-status").textContent = "";
 }
